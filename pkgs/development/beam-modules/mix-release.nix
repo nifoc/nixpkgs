@@ -212,6 +212,9 @@ stdenv.mkDerivation (
       '';
 
     postFixup =
+      let
+        erlangLib = builtins.unsafeDiscardStringContext "${erlang}/lib";
+      in
       ''
         echo "removing files for Microsoft Windows"
         rm -f "$out"/bin/*.bat
@@ -242,9 +245,9 @@ stdenv.mkDerivation (
           # following steps are required.
 
           # 1. remove references to erlang from plain text files
-          for file in $(rg "${erlang}/lib/erlang" "$out" --files-with-matches); do
+          for file in $(rg "${erlangLib}/erlang" "$out" --files-with-matches); do
             echo "removing references to erlang in $file"
-            substituteInPlace "$file" --replace "${erlang}/lib/erlang" "$out"
+            substituteInPlace "$file" --replace "${erlangLib}/erlang" "$out"
           done
 
           # 2. remove references to erlang from .beam files
@@ -253,11 +256,11 @@ stdenv.mkDerivation (
           # by ERL_COMPILER_OPTIONS.
 
           # 3. remove references to erlang from normal binary files
-          for file in $(rg "${erlang}/lib/erlang" "$out" --files-with-matches --binary --iglob '!*.beam'); do
+          for file in $(rg "${erlangLib}/erlang" "$out" --files-with-matches --binary --iglob '!*.beam'); do
             echo "removing references to erlang in $file"
             # use bbe to substitute strings in binary files, because using substituteInPlace
             # on binaries will raise errors
-            bbe -e "s|${erlang}/lib/erlang|$out|" -o "$file".tmp "$file"
+            bbe -e "s|${erlangLib}/erlang|$out|" -o "$file".tmp "$file"
             rm -f "$file"
             mv "$file".tmp "$file"
           done
